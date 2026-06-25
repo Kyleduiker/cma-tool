@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMA Builder — Duiker Properties</title>
+  <link rel="stylesheet" href="../shared/css/tokens.css">
+  <style>
+    /* ── Layout ── */
+    .app-header {
+      background: var(--navy);
+      color: var(--white);
+      padding: var(--space-md) var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .app-header .brand {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      letter-spacing: 0.03em;
+    }
+    .app-header .brand span { color: var(--gold); }
+    .app-header .subtitle {
+      font-size: 12px;
+      opacity: 0.6;
+      font-family: var(--font-body);
+      margin-top: 2px;
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: calc(100vh - 62px);
+    }
+
+    /* ── Sidebar: saved evaluations ── */
+    .sidebar {
+      background: var(--white);
+      border-right: 1px solid var(--gray-100);
+      padding: var(--space-md);
+      overflow-y: auto;
+    }
+    .sidebar h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray-600);
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-sm);
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .eval-item {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      margin-bottom: var(--space-xs);
+      border: 1.5px solid transparent;
+      transition: all 0.15s;
+    }
+    .eval-item:hover { background: var(--gray-100); }
+    .eval-item.active { border-color: var(--navy); background: var(--off-white); }
+    .eval-item .address { font-size: 13px; font-weight: 500; color: var(--navy); }
+    .eval-item .meta    { font-size: 11px; color: var(--gray-600); margin-top: 2px; }
+    .new-btn { width: 100%; margin-bottom: var(--space-md); }
+
+    /* ── Main content ── */
+    .main-content { padding: var(--space-xl); overflow-y: auto; }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 26px;
+      color: var(--navy);
+      margin-bottom: var(--space-xs);
+    }
+    .section-sub {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: var(--space-lg);
+    }
+
+    .section-block {
+      margin-bottom: var(--space-xl);
+    }
+    .section-block h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-sm);
+      border-bottom: 2px solid var(--gold-light);
+    }
+
+    /* ── Comp cards ── */
+    .comp-list { display: flex; flex-direction: column; gap: var(--space-md); }
+    .comp-card {
+      background: var(--white);
+      border: 1.5px solid var(--gray-100);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      position: relative;
+    }
+    .comp-card .comp-num {
+      position: absolute;
+      top: var(--space-md);
+      right: var(--space-md);
+      width: 28px;
+      height: 28px;
+      background: var(--navy);
+      color: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .comp-card h4 {
+      font-size: 14px;
+      margin-bottom: var(--space-md);
+      color: var(--navy);
+    }
+    .remove-comp {
+      background: none;
+      border: none;
+      color: var(--gray-600);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 4px;
+      position: absolute;
+      top: var(--space-md);
+      right: 44px;
+    }
+    .remove-comp:hover { color: var(--red); }
+
+    /* ── Price range output ── */
+    .price-range-box {
+      background: var(--navy);
+      color: var(--white);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg) var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+    }
+    .price-range-box .label {
+      font-size: 12px;
+      opacity: 0.6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .price-range-box .value {
+      font-family: var(--font-heading);
+      font-size: 36px;
+      color: var(--gold);
+      line-height: 1.1;
+    }
+    .price-range-box .range-item { text-align: center; }
+
+    /* ── Action bar ── */
+    .action-bar {
+      display: flex;
+      gap: var(--space-md);
+      margin-top: var(--space-xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid var(--gray-100);
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 60vh;
+      text-align: center;
+      color: var(--gray-600);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: var(--space-md); opacity: 0.4; }
+    .empty-state h2 { font-size: 22px; margin-bottom: var(--space-sm); color: var(--navy); }
+    .empty-state p  { font-size: 14px; margin-bottom: var(--space-lg); }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <div class="brand">Duiker <span>Properties</span></div>
+    <div class="subtitle">CMA Builder — Market Evaluation Tool</div>
+  </div>
+  <div style="display:flex; gap:12px; align-items:center;">
+    <span id="save-status" style="font-size:12px; opacity:0.5;"></span>
+    <button class="btn btn-gold" onclick="openPresenter()">▶ Present to Client</button>
+  </div>
+</header>
+
+<div class="main-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <button class="btn btn-primary new-btn" onclick="newEvaluation()">+ New Evaluation</button>
+    <h3>Saved Evaluations</h3>
+    <div id="eval-list">
+      <p style="font-size:12px; color:var(--gray-600);">No evaluations yet.</p>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content" id="main-content">
+    <div class="empty-state">
+      <div class="icon">🏡</div>
+      <h2>No Evaluation Open</h2>
+      <p>Start a new evaluation or select one from the sidebar.</p>
+      <button class="btn btn-primary" onclick="newEvaluation()">+ New Evaluation</button>
+    </div>
+  </main>
+
+</div>
+
+<script src="../shared/js/storage.js"></script>
+<script>
+let currentId = null;
+
+// ── Render sidebar list ──
+function renderSidebar() {
+  const list = document.getElementById('eval-list');
+  const all = getAllEvaluations();
+  if (!all.length) {
+    list.innerHTML = '<p style="font-size:12px; color:var(--gray-600);">No evaluations yet.</p>';
+    return;
+  }
+  list.innerHTML = all.map(e => `
+    <div class="eval-item ${e.id === currentId ? 'active' : ''}" onclick="loadEvaluation('${e.id}')">
+      <div class="address">${e.subject?.address || 'Untitled'}</div>
+      <div class="meta">${e.subject?.community || ''} · ${formatDate(e.updatedAt).replace(/,.*/, '')}</div>
+    </div>
+  `).join('');
+}
+
+// ── New evaluation ──
+function newEvaluation() {
+  const id = generateId();
+  const ev = {
+    id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    subject: { address:'', community:'', style:'', bedrooms:'', bathrooms:'', sqft:'', garage:'', year:'', basement:'' },
+    comps: [],
+    notes: '',
+    adjustmentPercent: 0
+  };
+  saveEvaluation(ev);
+  currentId = id;
+  renderSidebar();
+  renderBuilder(ev);
+}
+
+// ── Load evaluation ──
+function loadEvaluation(id) {
+  const ev = getEvaluation(id);
+  if (!ev) return;
+  currentId = id;
+  renderSidebar();
+  renderBuilder(ev);
+}
+
+// ── Autosave ──
+function autosave() {
+  if (!currentId) return;
+  const ev = collectFormData();
+  ev.updatedAt = new Date().toISOString();
+  saveEvaluation(ev);
+  renderSidebar();
+  document.getElementById('save-status').textContent = 'Saved ✓';
+  setTimeout(() => { document.getElementById('save-status').textContent = ''; }, 2000);
+  updatePriceRange();
+}
+
+// ── Collect form data ──
+function collectFormData() {
+  const ev = getEvaluation(currentId) || { id: currentId, createdAt: new Date().toISOString() };
+  ev.subject = {
+    address:   v('subj-address'),
+    community: v('subj-community'),
+    style:     v('subj-style'),
+    bedrooms:  v('subj-bedrooms'),
+    bathrooms: v('subj-bathrooms'),
+    sqft:      v('subj-sqft'),
+    garage:    v('subj-garage'),
+    year:      v('subj-year'),
+    basement:  v('subj-basement'),
+  };
+  ev.notes = v('notes');
+  ev.adjustmentPercent = parseFloat(v('adjustment')) || 0;
+  // comps
+  ev.comps = [];
+  document.querySelectorAll('.comp-card').forEach((card, i) => {
+    ev.comps.push({
+      address:   v(`comp-address-${i}`),
+      soldPrice: parseFloat(v(`comp-price-${i}`)) || 0,
+      soldDate:  v(`comp-date-${i}`),
+      sqft:      parseFloat(v(`comp-sqft-${i}`)) || 0,
+      bedrooms:  v(`comp-beds-${i}`),
+      bathrooms: v(`comp-baths-${i}`),
+      style:     v(`comp-style-${i}`),
+      notes:     v(`comp-notes-${i}`),
+    });
+  });
+  return ev;
+}
+
+function v(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+// ── Price range calculation ──
+function updatePriceRange() {
+  const ev = collectFormData();
+  const prices = ev.comps.map(c => c.soldPrice).filter(p => p > 0);
+  if (!prices.length) {
+    document.getElementById('pr-low').textContent = '—';
+    document.getElementById('pr-mid').textContent = '—';
+    document.getElementById('pr-high').textContent = '—';
+    return;
+  }
+  const adj = 1 + (ev.adjustmentPercent / 100);
+  const sorted = [...prices].sort((a,b) => a-b);
+  const low  = Math.round(sorted[0] * adj / 1000) * 1000;
+  const high = Math.round(sorted[sorted.length-1] * adj / 1000) * 1000;
+  const mid  = Math.round((prices.reduce((a,b) => a+b,0) / prices.length) * adj / 1000) * 1000;
+  document.getElementById('pr-low').textContent  = formatCurrency(low);
+  document.getElementById('pr-mid').textContent  = formatCurrency(mid);
+  document.getElementById('pr-high').textContent = formatCurrency(high);
+}
+
+// ── Add comp ──
+function addComp() {
+  const ev = collectFormData();
+  ev.comps.push({ address:'', soldPrice:'', soldDate:'', sqft:'', bedrooms:'', bathrooms:'', style:'', notes:'' });
+  saveEvaluation(ev);
+  renderBuilder(ev);
+  // scroll to new comp
+  setTimeout(() => {
+    document.querySelectorAll('.comp-card').forEach(el => el.scrollIntoView && 0);
+    const cards = document.querySelectorAll('.comp-card');
+    if (cards.length) cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 100);
+}
+
+// ── Remove comp ──
+function removeComp(i) {
+  const ev = collectFormData();
+  ev.comps.splice(i, 1);
+  saveEvaluation(ev);
+  renderBuilder(ev);
+}
+
+// ── Render builder ──
+function renderBuilder(ev) {
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = `
+    <div class="section-title">${ev.subject?.address || 'New Evaluation'}</div>
+    <div class="section-sub">Market Evaluation · ${formatDate(ev.updatedAt || ev.createdAt)}</div>
+
+    <!-- Subject Property -->
+    <div class="section-block card">
+      <h3>Subject Property</h3>
+      <div class="field"><label>Street Address</label>
+        <input type="text" id="subj-address" value="${ev.subject?.address||''}" placeholder="123 Mahogany Blvd SE" oninput="autosave()">
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Community</label>
+          <input type="text" id="subj-community" value="${ev.subject?.community||''}" placeholder="Mahogany" oninput="autosave()">
+        </div>
+        <div class="field"><label>Style</label>
+          <select id="subj-style" onchange="autosave()">
+            ${['','2-Storey','Bi-Level','Bungalow','Attached','Townhouse','Condo Apt'].map(s =>
+              `<option ${ev.subject?.style===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Year Built</label>
+          <input type="number" id="subj-year" value="${ev.subject?.year||''}" placeholder="2018" oninput="autosave()">
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Bedrooms</label>
+          <input type="number" id="subj-bedrooms" value="${ev.subject?.bedrooms||''}" placeholder="3" oninput="autosave()">
+        </div>
+        <div class="field"><label>Bathrooms</label>
+          <input type="number" id="subj-bathrooms" value="${ev.subject?.bathrooms||''}" step="0.5" placeholder="2.5" oninput="autosave()">
+        </div>
+        <div class="field"><label>Sq Ft (RMS)</label>
+          <input type="number" id="subj-sqft" value="${ev.subject?.sqft||''}" placeholder="1850" oninput="autosave()">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Garage</label>
+          <select id="subj-garage" onchange="autosave()">
+            ${['','Single Attached','Double Attached','Triple Attached','Single Detached','Double Detached','No Garage'].map(s =>
+              `<option ${ev.subject?.garage===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Basement</label>
+          <select id="subj-basement" onchange="autosave()">
+            ${['','Fully Finished','Partially Finished','Unfinished','None'].map(s =>
+              `<option ${ev.subject?.basement===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparable Sales -->
+    <div class="section-block">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-md);">
+        <h3 style="margin-bottom:0; border:none; padding:0; font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:var(--gold);">Comparable Sales</h3>
+        <button class="btn btn-outline" onclick="addComp()" style="font-size:13px; padding:6px 14px;">+ Add Comp</button>
+      </div>
+      <div class="comp-list" id="comp-list">
+        ${ev.comps.length === 0
+          ? `<div style="text-align:center; padding:32px; color:var(--gray-600); font-size:14px; background:var(--white); border-radius:var(--radius-md);">No comps yet — click <strong>+ Add Comp</strong> to begin.</div>`
+          : ev.comps.map((c, i) => `
+          <div class="comp-card">
+            <div class="comp-num">${i+1}</div>
+            <button class="remove-comp" onclick="removeComp(${i})" title="Remove">×</button>
+            <div class="field"><label>Address</label>
+              <input type="text" id="comp-address-${i}" value="${c.address||''}" placeholder="456 Auburn Bay Dr SE" oninput="autosave()">
+            </div>
+            <div class="grid-3">
+              <div class="field"><label>Sold Price</label>
+                <input type="number" id="comp-price-${i}" value="${c.soldPrice||''}" placeholder="650000" oninput="autosave()">
+              </div>
+              <div class="field"><label>Sold Date</label>
+                <input type="date" id="comp-date-${i}" value="${c.soldDate||''}" onchange="autosave()">
+              </div>
+              <div class="field"><label>Sq Ft (RMS)</label>
+                <input type="number" id="comp-sqft-${i}" value="${c.sqft||''}" placeholder="1800" oninput="autosave()">
+              </div>
+            </div>
+            <div class="grid-3">
+              <div class="field"><label>Beds</label>
+                <input type="number" id="comp-beds-${i}" value="${c.bedrooms||''}" placeholder="3" oninput="autosave()">
+              </div>
+              <div class="field"><label>Baths</label>
+                <input type="number" id="comp-baths-${i}" value="${c.bathrooms||''}" step="0.5" placeholder="2.5" oninput="autosave()">
+              </div>
+              <div class="field"><label>Style</label>
+                <select id="comp-style-${i}" onchange="autosave()">
+                  ${['','2-Storey','Bi-Level','Bungalow','Attached','Townhouse','Condo Apt'].map(s =>
+                    `<option ${c.style===s?'selected':''}>${s}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div class="field"><label>Notes</label>
+              <input type="text" id="comp-notes-${i}" value="${c.notes||''}" placeholder="Backing park, updated kitchen…" oninput="autosave()">
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Price Analysis -->
+    <div class="section-block card">
+      <h3>Price Analysis</h3>
+      <div class="field" style="max-width:240px; margin-bottom:var(--space-lg);">
+        <label>Overall Adjustment (%)</label>
+        <input type="number" id="adjustment" value="${ev.adjustmentPercent||0}" step="0.5" placeholder="0"
+          title="Apply a % adjustment to all comp prices (e.g. +2 for condition, -1 for market shift)"
+          oninput="autosave()">
+        <small style="color:var(--gray-600); font-size:11px; margin-top:4px; display:block;">Positive = subject property worth more than comps</small>
+      </div>
+      <div class="price-range-box">
+        <div class="range-item">
+          <div class="label">Conservative</div>
+          <div class="value" id="pr-low">—</div>
+        </div>
+        <div class="range-item">
+          <div class="label">Recommended</div>
+          <div class="value" id="pr-mid">—</div>
+        </div>
+        <div class="range-item">
+          <div class="label">Aggressive</div>
+          <div class="value" id="pr-high">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="section-block card">
+      <h3>Agent Notes</h3>
+      <textarea id="notes" rows="4" placeholder="Market conditions, seller motivation, showing notes…" oninput="autosave()">${ev.notes||''}</textarea>
+    </div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="openPresenter()">▶ Present to Client</button>
+      <button class="btn btn-outline" onclick="window.print()">🖨 Print / PDF</button>
+      <button class="btn btn-danger" onclick="deleteCurrentEval()" style="margin-left:auto;">Delete Evaluation</button>
+    </div>
+  `;
+  updatePriceRange();
+}
+
+function deleteCurrentEval() {
+  if (!currentId) return;
+  if (!confirm('Delete this evaluation? This cannot be undone.')) return;
+  deleteEvaluation(currentId);
+  currentId = null;
+  renderSidebar();
+  document.getElementById('main-content').innerHTML = `
+    <div class="empty-state">
+      <div class="icon">🏡</div>
+      <h2>No Evaluation Open</h2>
+      <p>Start a new evaluation or select one from the sidebar.</p>
+      <button class="btn btn-primary" onclick="newEvaluation()">+ New Evaluation</button>
+    </div>`;
+}
+
+function openPresenter() {
+  if (!currentId) { alert('Please open an evaluation first.'); return; }
+  window.open(`../present/index.html?id=${currentId}`, '_blank');
+}
+
+// ── Init ──
+renderSidebar();
+const all = getAllEvaluations();
+if (all.length) { currentId = all[0].id; renderBuilder(all[0]); }
+</script>
+</body>
+</html>
